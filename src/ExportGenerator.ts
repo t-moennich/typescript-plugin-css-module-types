@@ -2,11 +2,8 @@ import { CSSExports } from "icss-utils";
 import { camelCase } from "lodash";
 import IOptions from "./IOptions";
 
-const dashesCamelCase = (className: string) => {
-    return className.replace(/-+(\w)/g, (match, firstLetter) => firstLetter.toUpperCase());
-};
-
 export default class ExportGenerator {
+
     private readonly options: IOptions;
 
     public constructor(options: IOptions) {
@@ -21,18 +18,28 @@ export default class ExportGenerator {
                 return previousValue.concat(currentValue);
             }, []);
 
-        const defaultExport = `\
+        return `\
 declare const styles: {
-    [index: string]: string;
-    ${classNames.map(className => `"${className}": string;`).join("\n  ")}
-};
-export default styles;
-`;
+  [index: ${classNames.map(className => `"${className}"`).join(" | ")}]: string;
 
-        return defaultExport;
+${classNames.map(className => `  "${className}": string;`).join("\n")}
+};
+
+export default styles;
+
+${
+    classNames
+        .filter(className => !className.match(/[^a-z0-9_]/))
+        .map(className => `export const ${className};`).join("\n")
+}
+        `;
     }
 
     public transformClassName(className: string) {
+        const dashesCamelCase = (dashedClassName: string) => {
+            return dashedClassName.replace(/-+(\w)/g, (match, firstLetter) => firstLetter.toUpperCase());
+        };
+
         const entries: Array<string> = [];
 
         switch (this.options.camelCase) {
