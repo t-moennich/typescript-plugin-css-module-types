@@ -23,23 +23,43 @@ const init = ({ typescript: ts }: { typescript: typeof tss }) => {
         const exportGenerator = new ExportGenerator(options);
         const fileUtils = new FileUtils(options);
 
+        const createSnapshot = (scriptSnapshot: tss.IScriptSnapshot) => {
+            const css = fileUtils.getSourceCode(scriptSnapshot);
+            if (css.match(/declare const style/)) {
+                return null;
+            }
+
+            const classes = cssParser.getClasses(css);
+            if (classes === null) {
+                return null;
+            }
+
+            const dts = exportGenerator.generate(classes);
+
+            return ts.ScriptSnapshot.fromString(dts);
+        };
+
         const oldCreateLanguageServiceSourceFile = ts.createLanguageServiceSourceFile;
-        // @ts-ignore
         ts.createLanguageServiceSourceFile = (fileName, scriptSnapshot, ...additionalParameters): ts.SourceFile => {
 
+            // Note: For (currently) unknown reason this is now called twice!
+            //       Once for the original file and once again for the generated declaration file..
+            //       We try to work around this by catching errors in node-sass processing and using null response.
+            let wasParsedSuccessful = false;
             if (fileUtils.isModulePath(fileName)) {
                 logger.log(`Getting css snapshots from: ${fileName}`);
 
-                const css = fileUtils.getSourceCode(scriptSnapshot);
-                const classes = cssParser.getClasses(css);
-                const dts = exportGenerator.generate(classes);
-
-                scriptSnapshot = ts.ScriptSnapshot.fromString(dts);
+                const newSnapshot = createSnapshot(scriptSnapshot);
+                if (newSnapshot !== null) {
+                    scriptSnapshot = newSnapshot;
+                    wasParsedSuccessful = true;
+                }
             }
 
             // @ts-ignore
             const sourceFile = oldCreateLanguageServiceSourceFile(fileName, scriptSnapshot, ...additionalParameters);
-            if (fileUtils.isModulePath(fileName)) {
+
+            if (wasParsedSuccessful) {
                 sourceFile.isDeclarationFile = true;
             }
 
@@ -47,22 +67,23 @@ const init = ({ typescript: ts }: { typescript: typeof tss }) => {
         };
 
         const oldUpdateLanguageServiceSourceFile = ts.updateLanguageServiceSourceFile;
-        // @ts-ignore
         ts.updateLanguageServiceSourceFile = (sourceFile, scriptSnapshot, ...rest): ts.SourceFile => {
 
+            let wasParsedSuccessful = false;
             if (fileUtils.isModulePath(sourceFile.fileName)) {
-                logger.log(`Getting css snapshots for: ${sourceFile.fileName}`);
+                logger.log(`Update css snapshots for: ${sourceFile.fileName}`);
 
-                const css = fileUtils.getSourceCode(scriptSnapshot);
-                const classes = cssParser.getClasses(css);
-                const dts = exportGenerator.generate(classes);
-
-                scriptSnapshot = ts.ScriptSnapshot.fromString(dts);
+                const newSnapshot = createSnapshot(scriptSnapshot);
+                if (newSnapshot !== null) {
+                    scriptSnapshot = newSnapshot;
+                    wasParsedSuccessful = true;
+                }
             }
 
             // @ts-ignore
             sourceFile = oldUpdateLanguageServiceSourceFile(sourceFile, scriptSnapshot, ...rest);
-            if (fileUtils.isModulePath(sourceFile.fileName)) {
+
+            if (wasParsedSuccessful) {
                 sourceFile.isDeclarationFile = true;
             }
 

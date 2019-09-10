@@ -1,5 +1,5 @@
 import path from "path";
-import { extractICSS } from "icss-utils";
+import { CSSExports, extractICSS } from "icss-utils";
 import nodeSass, { SyncImporter, SyncOptions } from "node-sass";
 import postcss from "postcss";
 import postcssIcssSelectors from "postcss-icss-selectors";
@@ -19,7 +19,7 @@ export default class CssParser {
         ]);
     }
 
-    public getClasses(scss: string) {
+    public getClasses(scss: string): CSSExports | null {
         try {
             const renderedCss = nodeSass.renderSync(this.getSassOptions(scss)).css.toString();
             const processedCss = this.processor.process(renderedCss);
@@ -30,7 +30,7 @@ export default class CssParser {
             this.logger.log(`Error during getClasses: ${e.toString()}`);
             this.logger.log(e.stack);
 
-            return {};
+            return null;
         }
     }
 
