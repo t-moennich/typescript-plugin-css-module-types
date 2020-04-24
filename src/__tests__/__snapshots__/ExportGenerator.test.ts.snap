@@ -2,25 +2,33 @@
 
 exports[`ExportGenerator creates exports with constants for every camel-case class 1`] = `
 "declare const styles: {
-    [index: string]: string;
-    \\"camelCase\\": string;
+  [index: \\"camelCase\\" | \\"camelCase2\\" | \\"some-class\\" | \\"const\\"]: string;
+
+  \\"camelCase\\": string;
   \\"camelCase2\\": string;
   \\"some-class\\": string;
   \\"const\\": string;
 };
+
 export default styles;
-"
+
+export const const;
+        "
 `;
 
 exports[`ExportGenerator creates exports without constants if no camel-case class was found 1`] = `
 "declare const styles: {
-    [index: string]: string;
-    \\"some-class\\": string;
+  [index: \\"some-class\\" | \\"some-class-2\\" | \\"const\\"]: string;
+
+  \\"some-class\\": string;
   \\"some-class-2\\": string;
   \\"const\\": string;
 };
+
 export default styles;
-"
+
+export const const;
+        "
 `;
 
 exports[`ExportGenerator should not transform classes when no option is set 1`] = `

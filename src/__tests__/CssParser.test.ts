@@ -30,6 +30,6 @@ describe("CssParser", () => {
     it("should return empty object on error", () => {
         const cssParser = new CssParser(new LoggerMock(), {});
         const classes = cssParser.getClasses(`invalid syntax`);
-        expect(classes).toMatchObject({});
+        expect(classes).toBeNull();
     });
 });
