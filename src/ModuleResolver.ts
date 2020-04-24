@@ -17,7 +17,7 @@ export default class ModuleResolver {
 
         return (moduleNames: Array<string>, containingFile: string, reusedNames?: Array<string>) => {
 
-            const resolvedModules = oldResolveModuleNames(moduleNames, containingFile, reusedNames);
+            const resolvedModules = oldResolveModuleNames(moduleNames, containingFile, reusedNames, undefined, {});
 
             return moduleNames.map((moduleName, index) => {
 
